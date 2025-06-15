@@ -1,2 +1,31 @@
 .qodo
+.airflow
+
+cat <<EOF > .gitignore
+# Environment
 .env
+secrets/
+
+# Airflow
+airflow/logs/
+airflow/airflow-webserver.pid
+
+# dbt
+dbt/target/
+dbt/dbt_packages/
+dbt/logs/
+
+# Airbyte
+airbyte/data/
+airbyte/config/*.json
+
+# IDE
+.idea/
+.vscode/
+EOF
+
+# Other
+dbt/profiles.yml
+dbt/target/
+airflow/logs/
+airbyte/data/

@@ -1,0 +1,203 @@
+x-airflow-common:
+  &airflow-common
+  build: .
+  image: ${AIRFLOW_IMAGE_NAME}
+  environment:
+    &airflow-env
+    AIRFLOW__CORE__EXECUTOR: CeleryExecutor
+    AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:airflow@postgres/airflow
+    AIRFLOW__CELERY__RESULT_BACKEND: db+postgresql://airflow:airflow@postgres/airflow
+    AIRFLOW__CELERY__BROKER_URL: redis://:@redis:6379/0
+    AIRFLOW__CORE__FERNET_KEY: ''
+    AIRFLOW__CORE__DAGS_ARE_PAUSED_AT_CREATION: 'true'
+    AIRFLOW__CORE__LOAD_EXAMPLES: 'false'
+    AIRFLOW__API__AUTH_BACKENDS: 'airflow.api.auth.backend.basic_auth'
+    _AIRFLOW_WWW_USER_USERNAME: ${_AIRFLOW_WWW_USER_USERNAME}
+    _AIRFLOW_WWW_USER_PASSWORD: ${_AIRFLOW_WWW_USER_PASSWORD}
+  volumes:
+    - ${AIRFLOW_PROJ_DIR}/dags:/opt/airflow/dags
+    - ${AIRFLOW_PROJ_DIR}/logs:/opt/airflow/logs
+    - ${AIRFLOW_PROJ_DIR}/plugins:/opt/airflow/plugins
+    - ${AIRFLOW_PROJ_DIR}/include:/opt/airflow/include
+    - ${AIRFLOW_PROJ_DIR}/dbt:/opt/dbt
+  depends_on:
+    redis:
+      condition: service_healthy
+    postgres:
+      condition: service_healthy
+  networks:
+    - analytics-net
+
+services:
+  postgres:
+    image: postgres:13
+    environment:
+      POSTGRES_USER: airflow
+      POSTGRES_PASSWORD: airflow
+      POSTGRES_DB: airflow
+    volumes:
+      - postgres-db-volume:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "airflow"]
+      interval: 10s
+      retries: 5
+    networks:
+      - analytics-net
+
+  redis:
+    image: redis:7.2-bookworm
+    expose:
+      - 6379
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      retries: 5
+    networks:
+      - analytics-net
+
+  airflow-webserver:
+    <<: *airflow-common
+    command: webserver
+    ports:
+      - "8081:8080"
+    restart: always
+
+  airflow-scheduler:
+    <<: *airflow-common
+    command: scheduler
+    restart: always
+
+  airflow-worker:
+    <<: *airflow-common
+    command: celery worker
+    restart: always
+
+  airflow-init:
+    <<: *airflow-common
+    command: >
+      bash -c "airflow db migrate && airflow users create 
+      --username ${_AIRFLOW_WWW_USER_USERNAME} 
+      --password ${_AIRFLOW_WWW_USER_PASSWORD} 
+      --firstname Admin --lastname User 
+      --role Admin --email admin@example.com"
+
+  airflow-cli:
+    <<: *airflow-common
+    command: bash
+    profiles:
+      - debug
+
+  airbyte-db:
+    image: postgres:13
+    container_name: airbyte-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: airbyte
+      POSTGRES_PASSWORD: airbyte
+      POSTGRES_DB: airbyte
+    volumes:
+      - airbyte_data:/var/lib/postgresql/data
+    networks:
+      - analytics-net
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U airbyte"]
+      interval: 10s
+      retries: 5
+
+  airbyte-server:
+    image: airbyte/server:0.50.49
+    container_name: airbyte-server
+    restart: unless-stopped
+    ports:
+      - "8001:8001"
+    environment:
+      - AIRBYTE_WORKSPACE_ROOT=/tmp/airbyte_local
+      - AIRBYTE_ROLE=server
+      - DATABASE_USER=airbyte
+      - DATABASE_PASSWORD=airbyte
+      - DATABASE_HOST=airbyte-db
+      - DATABASE_PORT=5432
+      - DATABASE_DB=airbyte
+      - DATABASE_URL=jdbc:postgresql://airbyte-db:5432/airbyte?user=airbyte&password=airbyte
+    volumes:
+      - airbyte_data:/data
+      - ./airbyte_workspace:/tmp/airbyte_local
+    depends_on:
+      - airbyte-db
+    networks:
+      - analytics-net
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8001/api/v1/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  airbyte-webapp:
+    image: airbyte/webapp:0.50.49
+    container_name: airbyte-webapp
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    environment:
+      - INTERNAL_API_HOST=airbyte-server
+      - CONNECTOR_BUILDER_API_HOST=airbyte-server
+      - KEYCLOAK_INTERNAL_HOST=keycloak
+    depends_on:
+      - airbyte-server
+    networks:
+      - analytics-net
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  keycloak:
+    image: quay.io/keycloak/keycloak:24.0.1
+    container_name: keycloak
+    environment:
+      KEYCLOAK_ADMIN: admin
+      KEYCLOAK_ADMIN_PASSWORD: admin
+    ports:
+      - "8090:8080"  
+    command: start-dev
+    networks:
+      - analytics-net
+    depends_on:
+      - airbyte-db
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  airbyte-temporal-db:
+    image: postgres:13-alpine
+    container_name: airbyte-temporal-db
+    environment:
+      POSTGRES_USER: temporal
+      POSTGRES_PASSWORD: temporal
+      POSTGRES_DB: temporal
+    ports:
+      - "5433:5432"
+      
+  airbyte-temporal:
+    image: airbyte/temporal:0.50.49
+    container_name: airbyte-temporal
+    environment:
+      - DB=postgresql
+      - POSTGRES_USER=temporal
+      - POSTGRES_PWD=temporal
+      - POSTGRES_SEEDS=airbyte-temporal-db
+    ports:
+      - "7233:7233"
+    depends_on:
+      - airbyte-temporal-db
+
+
+volumes:
+  postgres-db-volume:
+  airbyte_data:
+
+networks:
+  analytics-net:

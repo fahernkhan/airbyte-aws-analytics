@@ -1,0 +1,19 @@
+{
+  "name": "Postgres CRM Prod",
+  "connectionConfiguration": {
+    "host": "${PG_HOST}",
+    "port": "${PG_PORT}",
+    "database": "${PG_DATABASE}",
+    "username": "${PG_USER}",
+    "password": "${PG_PASSWORD}",
+    "replication_method": {
+      "method": "CDC",
+      "replication_slot": "airbyte_slot",
+      "publication_name": "airbyte_publication",
+      "initial_waiting_seconds": 300
+    },
+    "ssl_mode": {
+      "mode": "require"
+    }
+  }
+}

@@ -1,0 +1,17 @@
+name: 'crm'
+version: '1.0.0'
+config-version: 2
+profile: 'crm_prod'
+
+model-paths: ["models"]
+test-paths: ["tests"]
+
+models:
+  crm:
+    +materialized: table
+    bronze:
+      +schema: bronze
+    silver:
+      +schema: silver
+    gold:
+      +schema: gold

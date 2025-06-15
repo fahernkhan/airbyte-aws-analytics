@@ -1,0 +1,14 @@
+{
+  "name": "S3 Bronze Layer",
+  "connectionConfiguration": {
+    "bucket": "crm-bronze-raw",
+    "region": "ap-southeast-1",
+    "access_key_id": "${AWS_ACCESS_KEY_ID}",
+    "secret_access_key": "${AWS_SECRET_ACCESS_KEY}",
+    "format": {
+      "format_type": "Parquet",
+      "compression_codec": "ZSTD",
+      "partitioning": "DATE"
+    }
+  }
+}
