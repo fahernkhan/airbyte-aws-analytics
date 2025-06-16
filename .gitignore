@@ -1,31 +1,71 @@
-.qodo
-.airflow
-
 cat <<EOF > .gitignore
 # Environment
 .env
+
+# Ignore specific files and directories based on your project structure
+.qodo
+.airflow
+
+# Directories and files based on tree structure
+# .
+# ├── docker-compose.yaml
+# ├── Dockerfile
+# ├── infra
+# │   ├── kubernetes
+# │   └── terraform
+# ├── ingestion
+# │   └── airbyte
+# │       ├── config
+# │       ├── data
+# │       └── workspace
+# ├── metadata
+# │   └── openmetadata
+# ├── orchestration
+# │   └── airflow
+# │       ├── crm_pipeline.py
+# │       ├── dags
+# │       ├── dbt
+# │       ├── Dockerfile
+# │       ├── include
+# │       ├── logs
+# │       ├── plugins
+# │       └── requirements.txt
+# ├── others
+# │   └── backup_docker-compose.yaml
+# ├── README.md
+# ├── requirements.txt
+# ├── scripts
+# │   ├── build-images.sh
+# │   ├── delete_all.sh
+# │   ├── learn_script-dev.sh
+# │   └── run_tests.sh
+# └── transformation
+#     └── dbt
+#         ├── dbt_project.yml
+#         ├── Dockerfile
+#         ├── models
+#         ├── profiles.yml
+#         ├── scripts
+#         └── tests
+
+# Secrets
 secrets/
 
 # Airflow
-airflow/logs/
-airflow/airflow-webserver.pid
+orchestration/airflow/logs/
+orchestration/airflow/airflow-webserver.pid
 
 # dbt
-dbt/target/
-dbt/dbt_packages/
-dbt/logs/
+transformation/dbt/target/
+transformation/dbt/dbt_packages/
+transformation/dbt/logs/
+transformation/dbt/profiles.yml
 
 # Airbyte
-airbyte/data/
-airbyte/config/*.json
+ingestion/airbyte/data/
+ingestion/airbyte/config/*.json
 
 # IDE
 .idea/
 .vscode/
 EOF
-
-# Other
-dbt/profiles.yml
-dbt/target/
-airflow/logs/
-airbyte/data/

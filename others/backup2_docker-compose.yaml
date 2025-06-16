@@ -1,7 +1,6 @@
 x-airflow-common:
   &airflow-common
-  build: 
-    context: ./orchestration/airflow
+  build: .
   environment:
     &airflow-common-env
     AIRFLOW__CORE__EXECUTOR: CeleryExecutor
@@ -21,6 +20,7 @@ x-airflow-common:
     - ./orchestration/airflow/include:/opt/airflow/include
     - ./transformation/dbt:/opt/airflow/dbt
     - ./transformation/dbt/profiles.yml:/home/airflow/.dbt/profiles.yml
+    - /home/fathur/tmp/airbyte_local:/tmp/airbyte_local
   user: "${AIRFLOW_UID:-50000}:0"
   depends_on:
     redis:
