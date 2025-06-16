@@ -22,3 +22,6 @@ docker compose stop -v
 sudo ufw disable
 sudo ufw status
 sudo ufw enable
+## port forwarding
+ssh -i your.pem -L 5433:<rds server>:5432 ubuntu@publicipec2
+psql -h database_endpoint -U postgres -d nama_db
