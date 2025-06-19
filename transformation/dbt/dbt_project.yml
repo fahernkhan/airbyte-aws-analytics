@@ -1,17 +1,10 @@
-name: 'crm'
+name: 'erp_transform'
 version: '1.0.0'
 config-version: 2
-profile: 'crm_prod'
+
+profile: 'erp_project'
 
 model-paths: ["models"]
+analysis-paths: ["analysis"]
 test-paths: ["tests"]
-
-models:
-  crm:
-    +materialized: table
-    bronze:
-      +schema: bronze
-    silver:
-      +schema: silver
-    gold:
-      +schema: gold
+seed-paths: ["seeds"]

@@ -1,0 +1,16 @@
+version: 2
+
+models:
+  - name: erp_cust_az12
+    description: Cleaned ERP customer table
+    columns:
+      - name: cid
+        tests:
+          - not_null
+          - unique
+      - name: bdate
+        tests:
+          - accepted_values:
+              values: ["1990-01-01", "2000-01-01"]
+              config:
+                severity: warn

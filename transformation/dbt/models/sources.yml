@@ -1,0 +1,9 @@
+version: 2
+
+sources:
+  - name: erp_bronze
+    database: spectrum  # Schema Spectrum di Redshift
+    schema: erp
+    tables:
+      - name: erp_cust_az12
+        description: "Raw ERP customer data from S3"

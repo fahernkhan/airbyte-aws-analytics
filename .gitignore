@@ -1,7 +1,7 @@
 cat <<EOF > .gitignore
 # Environment
 .env
-
+.venv
 # Ignore specific files and directories based on your project structure
 .qodo
 .airflow
